@@ -1,6 +1,6 @@
 ========================================================
       GRA PAC-MAN Z BLOKADĄ ŚCIAN I KILKOMA POZIOMAMI
-========================================================
+
 
 1. Opis ogólny:
    - Jest to prosta gra 2D w stylu Pac-Mana.
