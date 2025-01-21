@@ -1,4 +1,4 @@
-========================================================
+
       GRA PAC-MAN Z BLOKADĄ ŚCIAN I KILKOMA POZIOMAMI
 
 
