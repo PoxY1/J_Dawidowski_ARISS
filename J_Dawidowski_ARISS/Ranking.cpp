@@ -1,4 +1,4 @@
-#include "Ranking.h"
+﻿#include "Ranking.h"
 #include <fstream>
 #include <iostream>
 #include <algorithm>
@@ -12,7 +12,8 @@ bool zapiszStan(const std::vector<GraczRanking>& dane)
         return false;
     }
 
-    plik << dane.size() << "\n";
+   plik << dane.size() << "\n";
+
     for (auto& gr : dane)
     {
         plik << gr.nick << " " << gr.punkty << "\n";
@@ -20,6 +21,8 @@ bool zapiszStan(const std::vector<GraczRanking>& dane)
     plik.close();
     return true;
 }
+
+
 
 bool wczytajStan(std::vector<GraczRanking>& dane)
 {

@@ -1,4 +1,4 @@
-#ifndef SILNIK_H
+﻿#ifndef SILNIK_H
 #define SILNIK_H
 
 #include <SFML/Graphics.hpp>

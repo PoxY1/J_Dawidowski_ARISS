@@ -1,6 +1,7 @@
-#include "Silnik.h"
+﻿#include "Silnik.h"
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 SilnikGry::SilnikGry()
     : okno(sf::VideoMode(SZEROKOSC_OKNA, WYSOKOSC_OKNA), "Pac-Man wersja PG"),
@@ -13,7 +14,7 @@ SilnikGry::SilnikGry()
     okno.setFramerateLimit(60);
 
     if (!czcionka.loadFromFile("CSMS.ttf"))
-        std::cerr << "Blad ladowania czcionki CSMS.ttf!\n";
+        std::cerr << "Błąd ładowania czcionki CSMS.ttf!\n";
 
     napisStatus.setFont(czcionka);
     napisStatus.setCharacterSize(26);
@@ -30,10 +31,10 @@ SilnikGry::SilnikGry()
     napisPomoc.setPosition(150.f, 100.f);
     napisPomoc.setString(
         "POMOC:\n"
-        "[Strzalki] - ruch\n"
-        "Sciany nie do przejscia\n"
-        "[ESC] - Wyjscie (T/N)\n"
-        "[F1] - pauza/powrot\n"
+        "[Strzałki] - ruch\n"
+        "Ściany nie do przejścia\n"
+        "[ESC] - Wyjście (T/N)\n"
+        "[F1] - pauza/powrót\n"
     );
 
     napisGameOver.setFont(czcionka);
@@ -49,11 +50,17 @@ SilnikGry::SilnikGry()
     napisNick.setFillColor(sf::Color::Red);
     napisNick.setOutlineColor(sf::Color::Black);
     napisNick.setOutlineThickness(3.f);
-    //napisNick.setString("GAME OVER!\n[Enter] - ponownie");
     napisNick.setPosition(50.f, 50.f);
 
-    tlo.setTexture(zasoby.wezTloLabirynt());
+    napisRanking.setFont(czcionka);
+    napisRanking.setCharacterSize(32);
+    napisRanking.setFillColor(sf::Color::Red);
+    napisRanking.setOutlineColor(sf::Color::Black);
+    napisRanking.setOutlineThickness(3.f);
+    napisRanking.setPosition(50.f, 50.f);
 
+    tlo.setTexture(zasoby.wezTloLabirynt());
+    wczytajStan(gracze);
     inicjujPoziomy();
 }
 
@@ -71,7 +78,6 @@ SilnikGry::~SilnikGry()
 
 void SilnikGry::uruchom()
 {
-    // Tworzymy postac
     postac = new Postac(zasoby.wezTexPostac());
     indeksPoziomu = 0;
 
@@ -86,14 +92,11 @@ void SilnikGry::uruchom()
 
 void SilnikGry::zapytajNick(const sf::Event& event)
 {
-
     if (event.type == sf::Event::TextEntered)
     {
-        std::cout << aktualnyNick << "\n";
         if (event.text.unicode >= 32 && event.text.unicode < 128)
         {
             aktualnyNick += static_cast<char>(event.text.unicode);
-            std::cout << aktualnyNick << "\n";
         }
     }
     else if (event.type == sf::Event::KeyPressed)
@@ -102,9 +105,7 @@ void SilnikGry::zapytajNick(const sf::Event& event)
         {
         case sf::Keyboard::Enter:
         {
-            // Dodajemy gracza
             GraczRanking pd;
-
             pd.nick = aktualnyNick;
             pd.punkty = 0;
             gracze.push_back(pd);
@@ -113,7 +114,6 @@ void SilnikGry::zapytajNick(const sf::Event& event)
                 [](const GraczRanking& a, const GraczRanking& b) { return a.punkty > b.punkty; }
             );
 
-            // checkowanieczy wpisany nick juz
             nicknameEntered = true;
 
             postac->ustawPozycje(SZEROKOSC_OKNA / 3.f, WYSOKOSC_OKNA / 3.f);
@@ -122,7 +122,8 @@ void SilnikGry::zapytajNick(const sf::Event& event)
         break;
         case sf::Keyboard::BackSpace:
         {
-            if (!aktualnyNick.empty()) aktualnyNick.pop_back();
+            if (!aktualnyNick.empty())
+                aktualnyNick.pop_back();
         }
         break;
         case sf::Keyboard::Escape:
@@ -139,12 +140,13 @@ void SilnikGry::zapytajNick(const sf::Event& event)
 std::vector<sf::FloatRect> SilnikGry::pobierzScianyAktPoziomu() const
 {
     std::vector<sf::FloatRect> ret;
-    if (indeksPoziomu < 0 || indeksPoziomu >= (int)poziomy.size()) return ret;
+    if (indeksPoziomu < 0 || indeksPoziomu >= static_cast<int>(poziomy.size()))
+        return ret;
 
-    auto& lvl = poziomy[indeksPoziomu];
-    for (auto n : lvl.sciankiNiereg)
+    const auto& lvl = poziomy[indeksPoziomu];
+    for (const auto& n : lvl.sciankiNiereg)
         ret.push_back(n->pobierzGranice());
-    for (auto s : lvl.sciankiProst)
+    for (const auto& s : lvl.sciankiProst)
         ret.push_back(s->pobierzGranice());
 
     return ret;
@@ -160,7 +162,7 @@ void SilnikGry::inicjujPoziomy()
         auto d = new Przeciwnik(zasoby.wezTexPrzeciwnik());
         d->ustawPozycje(500.f, 200.f);
         poziomy[0].duchy.push_back(d);
-        
+
 
         auto ni1 = new PrzeszkodaNieregularna({ 100.f,300.f }, sf::Color::Green);
         auto ni2 = new PrzeszkodaNieregularna({ 700.f,350.f }, sf::Color::Magenta);
@@ -172,7 +174,7 @@ void SilnikGry::inicjujPoziomy()
         poziomy[0].sciankiNiereg.push_back(ni4);
 
         auto pr1 = new PrzeszkodaProstokatna({ 0.f,70.f }, { 1280.f,20.f }, sf::Color::Blue); //top border
-        auto pr2= new PrzeszkodaProstokatna({ 100.f, 90.f }, { 20.f,550.f }, sf::Color::Blue);//
+        auto pr2 = new PrzeszkodaProstokatna({ 100.f, 90.f }, { 20.f,550.f }, sf::Color::Blue);//
         auto pr3 = new PrzeszkodaProstokatna({ 120.f, 550.f }, { 500.f,20.f }, sf::Color::Blue);//
         auto pr4 = new PrzeszkodaProstokatna({ 620.f, 550.f }, { 20.f,90.f }, sf::Color::Blue);//
         auto pr5 = new PrzeszkodaProstokatna({ 215.f, 200.f }, { 20.f,250.f }, sf::Color::Blue);//
@@ -277,7 +279,7 @@ void SilnikGry::inicjujPoziomy()
         auto pt3 = new PrzeszkodaProstokatna({ 500.f,170.f }, { 20.f,550.f }, sf::Color::Red);
         auto pt4 = new PrzeszkodaProstokatna({ 750.f,70.f }, { 20.f,550.f }, sf::Color::Red);
         auto pt5 = new PrzeszkodaProstokatna({ 1000.f,170.f }, { 20.f,550.f }, sf::Color::Red);
-  
+
         poziomy[2].sciankiProst.push_back(pt1);
         poziomy[2].sciankiProst.push_back(pt2);
         poziomy[2].sciankiProst.push_back(pt3);
@@ -314,7 +316,7 @@ void SilnikGry::inicjujPoziomy()
         auto ne4 = new PrzeszkodaNieregularna({ 600,111 }, sf::Color::White);
         auto ne5 = new PrzeszkodaNieregularna({ 700.f,589 }, sf::Color::Green);
         auto ne6 = new PrzeszkodaNieregularna({ 800,359 }, sf::Color::Blue);
-        auto ne7 = new PrzeszkodaNieregularna({ 900,690 }, sf::Color::Yellow);
+        auto ne7 = new PrzeszkodaNieregularna({ 1050,690 }, sf::Color::Yellow);
         auto ne8 = new PrzeszkodaNieregularna({ 1000,250 }, sf::Color::Red);
         auto ne9 = new PrzeszkodaNieregularna({ 200,530 }, sf::Color::White);
 
@@ -342,9 +344,16 @@ void SilnikGry::inicjujPoziomy()
 
 
 
-        auto jc1 = new Jablko(zasoby.wezTexJablko(), { 125.f,400.f });
-
+        auto jc1 = new Jablko(zasoby.wezTexJablko(), { 125.f,100.f });
+        auto jc2 = new Jablko(zasoby.wezTexJablko(), { 325.f,250.f });
+        auto jc3 = new Jablko(zasoby.wezTexJablko(), { 525.f,400.f });
+        auto jc4 = new Jablko(zasoby.wezTexJablko(), { 725.f,550.f });
+        auto jc5 = new Jablko(zasoby.wezTexJablko(), { 925.f,700.f });
         poziomy[3].jablka.push_back(jc1);
+        poziomy[3].jablka.push_back(jc2);
+        poziomy[3].jablka.push_back(jc3);
+        poziomy[3].jablka.push_back(jc4);
+        poziomy[3].jablka.push_back(jc5);
     }
     // Poziom 5
     {
@@ -365,7 +374,7 @@ void SilnikGry::inicjujPoziomy()
         poziomy[4].duchy.push_back(dh3);
         poziomy[4].duchy.push_back(dh4);
         poziomy[4].duchy.push_back(dh5);
-    
+
 
 
 
@@ -441,6 +450,12 @@ void SilnikGry::petlaZdarzen()
         if (e.type == sf::Event::Closed)
             etap = EtapGry::WYJSCIE_POTWIERDZENIE;
 
+        if (etap == EtapGry::NICK)
+        {
+            zapytajNick(e);
+            continue;
+        }
+
         if (e.type == sf::Event::KeyPressed)
         {
             auto code = e.key.code;
@@ -455,16 +470,10 @@ void SilnikGry::petlaZdarzen()
             }
             else if (code == sf::Keyboard::R)
             {
-
                 if (etap == EtapGry::MENU)
                     etap = EtapGry::RANKING;
                 else if (etap == EtapGry::RANKING)
                     etap = EtapGry::MENU;
-            }
-            else if (etap == EtapGry::NICK)
-            {
-                zapytajNick(e);
-                continue;
             }
             else if (etap == EtapGry::MENU && code == sf::Keyboard::Enter)
             {
@@ -477,39 +486,27 @@ void SilnikGry::petlaZdarzen()
                 {
                     etap = EtapGry::ROZGRYWKA;
                     punkty = 0;
-                    indeksPoziomu = 0;
+                    indeksPoziomu = 3;
                     postac->ustawPozycje(SZEROKOSC_OKNA / 3.f, WYSOKOSC_OKNA / 3.f);
                 }
                 break;
             }
             else if (etap == EtapGry::GAME_OVER && code == sf::Keyboard::Enter)
             {
-                // reset
+                // Reset gry
                 postac->ustawWynik(indeksPoziomu + 1);
                 punkty = 0;
                 indeksPoziomu = 0;
                 postac->ustawPozycje(SZEROKOSC_OKNA / 3.f, WYSOKOSC_OKNA / 3.f);
                 postac->resetujKolizjeZduchem();
-                auto& p = poziomy[indeksPoziomu];
-                
-                    for (auto j : p.jablka) {
-                        j->resetujZebranie();
-                    }
-                    for (auto ja : p.jablka) {
-                        ja->resetujZebranie();
-                    }
-                    for (auto jb : p.jablka) {
-                        jb->resetujZebranie();
-                    }
-                    for (auto jc : p.jablka) {
-                        jc->resetujZebranie();
-                    }
-                    for (auto jd : p.jablka) {
-                        jd->resetujZebranie();
-                    }
+
+                for (auto& poziom : poziomy)
+                {
+                    for (auto& jablko : poziom.jablka)
+                        jablko->resetujZebranie();
+                }
 
                 etap = EtapGry::ROZGRYWKA;
-
             }
         }
     }
@@ -528,9 +525,9 @@ void SilnikGry::aktualizuj(float dt)
         ss << "Podaj nick: \n"
             << aktualnyNick
             << "\n[ENTER] - zatwierdz, [ESC] - Anuluj";
-        napisNick.setString(ss.str());  
+        napisNick.setString(ss.str());
     }
-        break;
+    break;
     case EtapGry::RANKING:
     {
         std::ostringstream ss;
@@ -540,32 +537,25 @@ void SilnikGry::aktualizuj(float dt)
             ss << (i + 1) << ". " << gracze[i].nick
                 << " - " << gracze[i].punkty << "\n";
         }
-        ss << "\n[ENTER] - powrot do MENU";
+        ss << "\n[R] - powrot do MENU";
         napisRanking.setString(ss.str());
     }
+    break;
     case EtapGry::ROZGRYWKA:
     {
-        // RUCH POSTACI (blokowanie) => wywolujemy dopiero tutaj
         if (postac)
         {
-            // klawisze
             sf::Vector2f d(0.f, 0.f);
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))  d.x = -1.f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) d.x = 1.f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))    d.y = -1.f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))  d.y = 1.f;
             postac->ustawKierunek(d);
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::F))    punkty += 1;
-
-            // blokowanie
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::F))  punkty += 1;
             auto sciany = pobierzScianyAktPoziomu();
             postac->probujRuch(dt, sciany);
 
-            postac->aktualizuj(dt); // ewentualnie
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-        {
- 
+            postac->aktualizuj(dt);
         }
 
         auto& p = poziomy[indeksPoziomu];
@@ -573,7 +563,6 @@ void SilnikGry::aktualizuj(float dt)
         for (auto d : p.duchy)
             d->aktualizuj(dt);
 
-        // kolizja z duchem => +1
         if (postac)
         {
             for (auto w : p.duchy)
@@ -591,7 +580,6 @@ void SilnikGry::aktualizuj(float dt)
             }
         }
 
-        // zbieranie jablek => +30
         for (auto j : p.jablka)
         {
             if (!j->czyZebrane() && postac->pobierzGranice().intersects(j->pobierzGranice()))
@@ -601,15 +589,13 @@ void SilnikGry::aktualizuj(float dt)
             }
         }
 
-        // 150 -> next
         if (punkty >= 150)
         {
             indeksPoziomu++;
-            if (indeksPoziomu >= (int)poziomy.size())
+            if (indeksPoziomu >= static_cast<int>(poziomy.size()))
             {
-                indeksPoziomu = (int)poziomy.size() - 1;
-                etap = EtapGry::MENU;
                 indeksPoziomu = 0;
+                etap = EtapGry::MENU;
             }
             else
             {
@@ -621,14 +607,13 @@ void SilnikGry::aktualizuj(float dt)
         std::ostringstream ss;
         ss << "Poziom: " << (indeksPoziomu + 1)
             << "  |  Punkty: " << punkty << " / 150"
-            << "  |  Zycia: " << 3 - (postac->ileKolizjiZduchem()) << " / 3";
+            << "  |  Życia: " << 3 - postac->ileKolizjiZduchem() << " / 3";
         napisStatus.setString(ss.str());
     }
     break;
-
     case EtapGry::POMOC:
+        // Ewentualne aktualizacje w etapie pomocy
         break;
-
     case EtapGry::WYJSCIE_POTWIERDZENIE:
     {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::T))
@@ -637,10 +622,17 @@ void SilnikGry::aktualizuj(float dt)
             etap = EtapGry::ROZGRYWKA;
     }
     break;
-
     case EtapGry::GAME_OVER:
+        // Ewentualne aktualizacje po zakończeniu gry
+        if (!gracze.empty())
+        {
+            gracze.back().punkty = (punkty + (indeksPoziomu * 150));
+        }
+        std::sort(gracze.begin(), gracze.end(),
+            [](const GraczRanking& a, const GraczRanking& b) {return a.punkty > b.punkty;}
+        );
+        zapiszStan(gracze);
         break;
-
     default:
         break;
     }
@@ -656,51 +648,39 @@ void SilnikGry::rysuj()
         okno.draw(tlo);
         okno.draw(napisStatus);
         break;
-
     case EtapGry::NICK:
         okno.draw(napisNick);
         break;
-
     case EtapGry::ROZGRYWKA:
     {
         okno.draw(tlo);
-        auto& lvl = poziomy[indeksPoziomu];
+        const auto& lvl = poziomy[indeksPoziomu];
 
-        // sciany
-        for (auto n : lvl.sciankiNiereg)
+        for (const auto& n : lvl.sciankiNiereg)
             n->rysuj(okno);
-        for (auto pr : lvl.sciankiProst)
+        for (const auto& pr : lvl.sciankiProst)
             pr->rysuj(okno);
-        // jablka
-        for (auto jb : lvl.jablka)
+
+        for (const auto& jb : lvl.jablka)
             jb->rysuj(okno);
-        // duchy
-        for (auto d : lvl.duchy)
+
+        for (const auto& d : lvl.duchy)
             d->rysuj(okno);
 
-        if (postac) postac->rysuj(okno);
+        if (postac)
+            postac->rysuj(okno);
 
         okno.draw(napisStatus);
     }
     break;
-
     case EtapGry::RANKING:
-    {
         okno.draw(tlo);
-        sf::Text txt("Ranking:", czcionka, 40);
-        txt.setFillColor(sf::Color::Red);
-        txt.setOutlineColor(sf::Color::Black);
-        txt.setOutlineThickness(2.f);
-        txt.setPosition(400.f, 300.f);
-        okno.draw(txt);
-    }
-    break;
-
+        okno.draw(napisRanking);
+        break;
     case EtapGry::POMOC:
         okno.draw(tlo);
         okno.draw(napisPomoc);
         break;
-
     case EtapGry::WYJSCIE_POTWIERDZENIE:
     {
         okno.draw(tlo);
@@ -712,12 +692,10 @@ void SilnikGry::rysuj()
         okno.draw(txt);
     }
     break;
-
     case EtapGry::GAME_OVER:
         okno.draw(tlo);
         okno.draw(napisGameOver);
         break;
-
     default:
         break;
     }
